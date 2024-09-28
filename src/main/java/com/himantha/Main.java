@@ -10,7 +10,6 @@ import java.util.Scanner;
 import java.util.Set;
 
 public class Main {
-//    private char[][] seats = new char[20][20];
     public static Connection con = null;
 
     /**
@@ -79,57 +78,40 @@ public class Main {
     private static void addTicket(Connection con){
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Enter the Customer Phone number : ");
+        System.out.printf("%-70s", "Enter the Customer Phone number : ");
         String customerPhone = sc.nextLine();
 
         if(!DAO.checkCustomer(customerPhone, con)){
             addCustomer(con, customerPhone);
         }
 
-        System.out.print("Enter the Seat ID : ");
-        String seatID = sc.nextLine();
-
-        if(!Ticket.seatValidator(seatID)){
-            System.out.println("Invalid Seat ID");
+        String showID = scanMovieCode();
+        LocalDate date = scanDate();
+        String time = scanTime();
+        if(time == null)
             return;
+
+        String seatID;
+
+        while(true){
+            System.out.printf("%-70s", "Enter the Seat ID (Enter 0 to finish) : ");
+            seatID = sc.nextLine().toUpperCase();
+            if(seatID.equals("0"))
+                break;
+
+            if(!Ticket.seatValidator(seatID)){
+                System.out.println("Invalid Seat ID");
+                continue;
+            }
+            if(!DAO.checkSeat(showID, seatID, date, time, con)){
+                System.out.println("Seat is not available");
+                continue;
+            }
+
+            Ticket ticket = new Ticket(seatID, showID, customerPhone, date, time);
+            DAO.addTicketToDb(ticket, con);
+            System.out.println("Seat reserved successfully");
         }
-
-        System.out.print("Enter the movie code : ");
-        String showID = sc.nextLine();
-
-        System.out.print("Enter the Date of reservation : ");
-        String dateOfReservation = sc.nextLine();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate date = LocalDate.parse(dateOfReservation, formatter);
-
-        System.out.print("Enter the time (1. Morning, 2. Evening, 3. Night, 4. Special) : ");
-        int t = sc.nextInt();
-        String time;
-        switch(t){
-            case 1:
-                time = "Morning";
-                break;
-            case 2:
-                time = "Evening";
-                break;
-            case 3:
-                time = "Night";
-                break;
-            case 4:
-                time = "Special";
-                break;
-            default:
-                System.out.println("Invalid Time");
-                return;
-        }
-
-        if(!DAO.checkSeat(showID, seatID, date, time, con)){
-            System.out.println("Seat is not available");
-            return;
-        }
-
-        Ticket ticket = new Ticket(seatID, showID, customerPhone, date, time);
-        DAO.addTicketToDb(ticket, con);
     }
 
     /**
@@ -138,10 +120,9 @@ public class Main {
      */
     private static void addMovie(Connection con){
         Scanner sc = new Scanner(System.in);
-        System.out.println("Enter the Movie code : ");
-        String movieCode = sc.nextLine();
+        String movieCode = scanMovieCode();
 
-        System.out.println("Enter the movie name : ");
+        System.out.printf("%-70s", "Enter the movie name : ");
         String movieName = sc.nextLine();
 
         Movie movie = new Movie(movieCode, movieName);
@@ -157,13 +138,13 @@ public class Main {
     private static void addCustomer(Connection con ,String phone){
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Enter the Customer First Name : ");
+        System.out.printf("%-70s", "Enter the Customer First Name : ");
         String customerName = sc.nextLine();
 
-        System.out.print("Enter the Customer Last Name : ");
+        System.out.printf("%-70s", "Enter the Customer Last Name : ");
         String customerLastName = sc.nextLine();
 
-        System.out.print("Enter the Customer Email : ");
+        System.out.printf("%-70s", "Enter the Customer Email : ");
         String customerEmail = sc.nextLine();
 
         DAO.addCustomerToDb(new Customer(customerName, customerLastName, customerEmail, phone), con);
@@ -176,34 +157,13 @@ public class Main {
     private static void showSeats(Connection con){
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Enter the movie code : ");
+        System.out.printf("%-70s", "Enter the movie code : ");
         String showID = sc.nextLine();
 
-        System.out.print("Enter the Date of reservation : ");
-        String dateOfReservation = sc.nextLine();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate date = LocalDate.parse(dateOfReservation, formatter);
-
-        System.out.print("Enter the time (1. Morning, 2. Evening, 3. Night, 4. Special) : ");
-        int t = sc.nextInt();
-        String time;
-        switch(t){
-            case 1:
-                time = "Morning";
-                break;
-            case 2:
-                time = "Evening";
-                break;
-            case 3:
-                time = "Night";
-                break;
-            case 4:
-                time = "Special";
-                break;
-            default:
-                System.out.println("Invalid Time");
-                return;
-        }
+        LocalDate date = scanDate();
+        String time = scanTime();
+        if(time == null)
+            return;
 
         ResultSet rs = DAO.getAllReservedSeats(time, date, showID, con);
         char rowLetter = 'A';
@@ -248,48 +208,100 @@ public class Main {
     }
 
     /**
+     * Print all the reservation details as a list with customer details
+     * @param con Database Connection
+     */
+    private static void showReservationsInDetail(Connection con){
+        Scanner sc = new Scanner(System.in);
+
+        String showID = scanMovieCode();
+        LocalDate date = scanDate();
+        String time = scanTime();
+        if(time == null)
+            return;
+
+        ResultSet rs = DAO.getAllReservedSeats(time, date, showID, con);
+        try{
+            System.out.println("┌"+"─".repeat(7)+"┬"+"─".repeat(22)+"┬"+"─".repeat(22)+"┬"+"─".repeat(12)+"┬"+"─".repeat(42)+"┐");
+            System.out.printf("│ %-5s │ %-20s │ %-20s │ %-10s │ %-40s │\n", "Seat", "First Name", "Last Name", "Phone", "Email");
+            System.out.println("├"+"─".repeat(7)+"┼"+"─".repeat(22)+"┼"+"─".repeat(22)+"┼"+"─".repeat(12)+"┼"+"─".repeat(42)+"┤");
+            while (rs.next()){
+                System.out.printf("│  %-3s  │ %-20s │ %-20s │ %-10s │ %-40s │\n",
+                        rs.getString("seatID"),
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("customer_phone"),
+                        rs.getString("email"));
+            }
+            System.out.println("└"+"─".repeat(7)+"┴"+"─".repeat(22)+"┴"+"─".repeat(22)+"┴"+"─".repeat(12)+"┴"+"─".repeat(42)+"┘");
+        }catch (SQLException e){
+            System.out.println(e);
+        }
+    }
+
+    /**
+     * Print all the movies currently showing
+     * @param con
+     */
+    private static void showAllMovies(Connection con){
+        ResultSet rs = DAO.getAllMovies(con);
+        try{
+            System.out.println("┌────────┬────────────────────────────────┐");
+            System.out.printf("│ %-6s │ %-30s │\n", "Code", "Title");
+            System.out.println("├────────┼────────────────────────────────┤");
+            while (rs.next()){
+                System.out.printf("│ %-6s │ %-30s │\n", rs.getString("movie_id"), rs.getString("title"));
+            }
+            System.out.println("└────────┴────────────────────────────────┘");
+        }catch (SQLException e){
+            System.out.println(e);
+        }
+    }
+
+    /**
+     * Print details of all the Customers that is in the database
+     * @param con
+     */
+    private static void showAllCustomers(Connection con){
+        ResultSet rs = DAO.getAllCustomers(con);
+        try{
+            System.out.println("┌"+"─".repeat(22)+"┬"+"─".repeat(22)+"┬"+"─".repeat(12)+"┬"+"─".repeat(42)+"┐");
+            System.out.printf("│ %-20s │ %-20s │ %-10s │ %-40s │\n", "First Name", "Last Name", "Phone", "Email");
+            System.out.println("├"+"─".repeat(22)+"┼"+"─".repeat(22)+"┼"+"─".repeat(12)+"┼"+"─".repeat(42)+"┤");
+            while (rs.next()){
+                System.out.printf("│ %-20s │ %-20s │ %-10s │ %-40s │\n",
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("phone_number"),
+                        rs.getString("email"));
+            }
+            System.out.println("└"+"─".repeat(22)+"┴"+"─".repeat(22)+"┴"+"─".repeat(12)+"┴"+"─".repeat(42)+"┘");
+
+        }catch(SQLException e){
+            System.out.println(e);
+        }
+    }
+
+    /**
      * Remove a reservation
      * @param con
      */
     private static void removeTicket(Connection con){
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Enter the Seat ID : ");
-        String seatID = sc.nextLine();
+        System.out.printf("%-70s", "Enter the Seat ID : ");
+        String seatID = sc.nextLine().toUpperCase();
 
         if(!Ticket.seatValidator(seatID)){
             System.out.println("Invalid Seat ID");
             return;
         }
 
-        System.out.print("Enter the movie code : ");
-        String showID = sc.nextLine();
-
-        System.out.print("Enter the Date of reservation : ");
-        String dateOfReservation = sc.nextLine();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate date = LocalDate.parse(dateOfReservation, formatter);
-
-        System.out.print("Enter the time (1. Morning, 2. Evening, 3. Night, 4. Special) : ");
-        int t = sc.nextInt();
-        String time;
-        switch(t){
-            case 1:
-                time = "Morning";
-                break;
-            case 2:
-                time = "Evening";
-                break;
-            case 3:
-                time = "Night";
-                break;
-            case 4:
-                time = "Special";
-                break;
-            default:
-                System.out.println("Invalid Time");
-                return;
-        }
+        String showID = scanMovieCode();
+        LocalDate date = scanDate();
+        String time = scanTime();
+        if(time == null)
+            return;
 
         if(DAO.checkSeat(showID, seatID, date, time, con)){
             System.out.println("Seat is not reserved");
@@ -301,21 +313,27 @@ public class Main {
     }
 
     /**
-     * Print all the reservation details as a list with customer details
-     * @param con Database Connection
+     * Remove a movie from the database
+     * @param con
      */
-    private static void showReservationsInDetail(Connection con){
+    private static void removeMovie(Connection con){
+        Scanner sc = new Scanner(System.in);
+        String movieCode = scanMovieCode();
+        DAO.deleteMovie(movieCode, con);
+        System.out.println("Movie has been deleted");
+    }
+
+
+
+
+    /**
+     * Scan an integer and return the time slot as a String
+     * @return
+     */
+    private static String scanTime(){
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Enter the movie code : ");
-        String showID = sc.nextLine();
-
-        System.out.print("Enter the Date of reservation : ");
-        String dateOfReservation = sc.nextLine();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        LocalDate date = LocalDate.parse(dateOfReservation, formatter);
-
-        System.out.print("Enter the time (1. Morning, 2. Evening, 3. Night, 4. Special) : ");
+        System.out.printf("%-70s", "Enter the time (1. Morning, 2. Evening, 3. Night, 4. Special) : ");
         int t = sc.nextInt();
         String time;
         switch(t){
@@ -333,58 +351,33 @@ public class Main {
                 break;
             default:
                 System.out.println("Invalid Time");
-                return;
+                return null;
         }
-
-        ResultSet rs = DAO.getAllReservedSeats(time, date, showID, con);
-        try{
-            while (rs.next()){
-                System.out.print(rs.getString("seatID") + " ");
-                System.out.print(rs.getString("first_name") + " ");
-                System.out.print(rs.getString("last_name") + " ");
-                System.out.print(rs.getString("email") + " ");
-                System.out.print(rs.getString("customer_phone"));
-                System.out.println();
-            }
-        }catch (SQLException e){
-            System.out.println(e);
-        }
+        return time;
     }
 
-    private static void showAllMovies(Connection con){
-        ResultSet rs = DAO.getAllMovies(con);
-        try{
-            while (rs.next()){
-                System.out.print(rs.getString("movie_id") + " ");
-                System.out.print(rs.getString("title") + " ");
-                System.out.println();
-            }
-        }catch (SQLException e){
-            System.out.println(e);
-        }
-    }
-
-    private static void showAllCustomers(Connection con){
-        ResultSet rs = DAO.getAllCustomers(con);
-        try{
-            while (rs.next()){
-                System.out.print(rs.getString("first_name") + " ");
-                System.out.print(rs.getString("last_name") + " ");
-                System.out.print(rs.getString("phone_number") + " ");
-                System.out.print(rs.getString("email") + " ");
-            }
-        }catch(SQLException e){
-            System.out.println(e);
-        }
-    }
-
-    private static void removeMovie(Connection con){
+    /**
+     * Scan a String, convert it in to LocalDate and return
+     * @return
+     */
+    private static LocalDate scanDate(){
         Scanner sc = new Scanner(System.in);
 
-        System.out.print("Enter the movie code : ");
-        String movieCode = sc.nextLine();
+        System.out.printf("%-70s", "Enter the Date of reservation (yyyy-mm-dd) : ");
+        String dateOfReservation = sc.nextLine();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate date = LocalDate.parse(dateOfReservation, formatter);
 
-        DAO.deleteMovie(movieCode, con);
-        System.out.println("Movie has been deleted");
+        return date;
+    }
+
+    /**
+     * Scan a String, convert it in to uppercase and return
+     * @return movie code
+     */
+    private static String scanMovieCode(){
+        Scanner sc = new Scanner(System.in);
+        System.out.printf("%-70s", "Enter the movie code : ");
+        return sc.nextLine().toUpperCase();
     }
 }

@@ -2,8 +2,6 @@ package com.himantha;
 
 import java.sql.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 public class DAO {
 
@@ -35,6 +33,11 @@ public class DAO {
         }
     }
 
+    /**
+     * Add a customer to the database
+     * @param C
+     * @param con
+     */
     public static void addCustomerToDb(Customer C, Connection con){
         String phome = C.getPhone();
         String firstName = C.getFirstName();
@@ -54,6 +57,11 @@ public class DAO {
         }
     }
 
+    /**
+     * Add a movie to the database
+     * @param M
+     * @param con
+     */
     public static void addMovieToDb(Movie M, Connection con){
         String code = M.getCode();
         String title = M.getTitle();
@@ -85,12 +93,20 @@ public class DAO {
         }
     }
 
+    /**
+     * Return details of all the reservation for the given date, time, and moviecode
+     * @param time
+     * @param date
+     * @param movieCode
+     * @param con
+     * @return
+     */
     public static ResultSet getAllReservedSeats(String time, LocalDate date, String movieCode, Connection con){
         try {
             String query = "SELECT * FROM `tickets` " +
                            "INNER JOIN `movies` ON tickets.show_id = movies.movie_id " +
                            "INNER JOIN `customers` ON tickets.customer_phone = customers.phone_number " +
-                           "WHERE `time` = ? AND `date` = ? AND movies.movie_id = ?;";
+                           "WHERE `time` = ? AND `date` = ? AND movies.movie_id = ? ORDER BY seatId ASC;";
             PreparedStatement stmt = con.prepareStatement(query);
             stmt.setString(1, time);
             stmt.setDate(2, java.sql.Date.valueOf(date));
@@ -134,6 +150,12 @@ public class DAO {
         return null;
     }
 
+    /**
+     * Return true if the phone number is already in the database
+     * @param customerPhone
+     * @param con
+     * @return
+     */
     public static boolean checkCustomer(String customerPhone, Connection con){
         try {
             String query = "SELECT * FROM customers WHERE phone_number = ?";
@@ -193,5 +215,3 @@ public class DAO {
         }
     }
 }
-
-
