@@ -1,12 +1,23 @@
 package com.himantha;
 
+import java.sql.Connection;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Scanner;
+
 public class Ticket {
     private String seatId;
-    private Customer customer;
+    private String showId;
+    private String customerPhone;
+    private LocalDate date;
+    private String time;
 
-    public Ticket(String seatId, Customer customer) {
+    public Ticket(String seatId, String showId, String customerPhone, LocalDate date, String time) {
         this.seatId = seatId;
-        this.customer = customer;
+        this.showId = showId;
+        this.customerPhone = customerPhone;
+        this.date = date;
+        this.time = time;
     }
 
     public static boolean seatValidator(String seatID) {
@@ -25,7 +36,35 @@ public class Ticket {
         this.seatId = seatId;
     }
 
-    public Customer getCustomer() {
-        return customer;
+    public String getShowId() {
+        return showId;
+    }
+
+    public void setShowId(String showId) {
+        this.showId = showId;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
+    }
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
     }
 }

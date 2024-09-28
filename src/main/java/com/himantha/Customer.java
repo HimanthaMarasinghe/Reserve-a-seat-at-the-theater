@@ -1,5 +1,8 @@
 package com.himantha;
 
+import java.sql.Connection;
+import java.util.Scanner;
+
 public class Customer {
     private String firstName;
     private String lastName;
