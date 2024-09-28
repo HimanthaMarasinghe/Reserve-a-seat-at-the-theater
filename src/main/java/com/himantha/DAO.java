@@ -1,9 +1,16 @@
 package com.himantha;
 
 import java.sql.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DAO {
 
+    /**
+     * Adds a ticket to the database
+     * @param T Ticket object
+     * @param con Connection object
+     */
     public static void add(Ticket T, Connection con){
 
         Customer customer = T.getCustomer();
@@ -34,11 +41,42 @@ public class DAO {
         }
     }
 
+    /**
+     * Delete a reservation according to the seatID
+     * @param seatID Seat ID
+     * @param con Database Connection
+     */
+    public static void delete(String seatID, Connection con){
+        try {
+            String query = "DELETE FROM tickets WHERE seatId = ?";
+            PreparedStatement stmt = con.prepareStatement(query);
+            stmt.setString(1, seatID);
+            stmt.executeUpdate();
+        }catch (SQLException e){
+            System.out.println(e);
+        }
+    }
 
-    public static boolean checkAvailability(String seatId, Connection conn){
+    public static ResultSet getAllReservedSeats(Connection con){
+        try {
+            String query = "SELECT * FROM tickets";
+            PreparedStatement stmt = con.prepareStatement(query);
+            return stmt.executeQuery();
+        }catch (SQLException e){
+            System.out.println(e);
+        }
+        return null;
+    }
+
+    /**
+     * Return true if the seat is available
+     * @param con Connection object
+     * @param seatId The Id of the seat that want to be checked (eg: A01, B18)
+     */
+    public static boolean checkAvailability(String seatId, Connection con){
         try {
             String query = "SELECT * FROM tickets WHERE seatId = ?";
-            PreparedStatement ps = conn.prepareStatement(query);
+            PreparedStatement ps = con.prepareStatement(query);
             ps.setString(1, seatId);
             ResultSet rs = ps.executeQuery();
             if(rs.next()){

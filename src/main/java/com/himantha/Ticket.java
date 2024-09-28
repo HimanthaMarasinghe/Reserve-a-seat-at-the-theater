@@ -9,6 +9,14 @@ public class Ticket {
         this.customer = customer;
     }
 
+    public static boolean seatValidator(String seatID) {
+        if (seatID.matches("^[A-O][0-3][0-9]$")) {
+            int seatNum = Integer.parseInt(seatID.substring(1));
+            return seatNum >= 1 && seatNum <= 30;
+        }
+        return false;
+    }
+
     public String getSeatId() {
         return seatId;
     }
