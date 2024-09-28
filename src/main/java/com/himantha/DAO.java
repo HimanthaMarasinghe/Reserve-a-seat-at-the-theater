@@ -4,7 +4,7 @@ import java.sql.*;
 
 public class DAO {
 
-    public static void add(Ticket T){
+    public static void add(Ticket T, Connection con){
 
         Customer customer = T.getCustomer();
 
@@ -15,10 +15,9 @@ public class DAO {
         String CusPhone = customer.getPhone();
 
         try {
-            Connection con = DBConection.getConnection();
             con.setAutoCommit(false);
 
-            String query = "INSERT INTO tickets VALUES(?,?,?,?,?)";
+            String query = "INSERT INTO tickets(seatId, cusFirstName, cusLastName, cusEmail, cusPhone) VALUES(?,?,?,?,?)";
             PreparedStatement ps = con.prepareStatement(query);
             ps.setString(1, seatId);
             ps.setString(2, CusFirstName);
@@ -35,13 +34,21 @@ public class DAO {
         }
     }
 
-    public static boolean checkAvailability(String seatId){
+
+    public static boolean checkAvailability(String seatId, Connection conn){
         try {
-            Connection conn = DBConection.getConnection();
-            String query = "SELECT available FROM seats";
-        }catch (SQLException e){
+            String query = "SELECT * FROM tickets WHERE seatId = ?";
+            PreparedStatement ps = conn.prepareStatement(query);
+            ps.setString(1, seatId);
+            ResultSet rs = ps.executeQuery();
+            if(rs.next()){
+                //seat is not available
+                return false;
+            }
+        }catch (SQLException e) {
             System.out.println(e);
         }
+        return true;
     }
 }
 
